@@ -1,3 +1,5 @@
+[中文说明](https://github.com/xiongmu0-0/ComfyNode_Preview/blob/main/READMECN.md)
+
 # ComfyNode Preview
 
 ComfyNode Preview is a web-based viewer for ComfyUI workflows that allows users to visualize and explore workflow configurations in an interactive graph interface.
