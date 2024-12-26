@@ -1,0 +1,417 @@
+:root {
+    /* CSS Variable Definitions */
+    /* Filename Display Variables */
+    --filename-top: 20px;          /* Distance from top */
+    --filename-left: 20px;         /* Distance from left */
+    --filename-padding: 8px 15px;  /* Padding */
+    --filename-font-size: 24px;    /* Font size */
+    --filename-bg-color: rgba(50, 50, 50, 0.9);  /* Background color */
+    --filename-text-color: #c1c1c1;              /* Text color */
+    --filename-border-radius: 8px;               /* Border radius */
+    --filename-font-weight: 600;                 /* Font weight */
+
+    /* Sidebar Variables */
+    --sidebar-width: 320px;        /* Sidebar width */
+    --sidebar-height: 60vh;        /* Sidebar height, 60% of viewport height */
+    --sidebar-left: 20px;          /* Distance from left */
+    --sidebar-bottom: 20px;        /* Distance from bottom */
+    --sidebar-border-radius: 12px; /* Border radius */
+}
+
+/* Base Page Styles */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;  /* Prevent page scrolling */
+}
+
+body {
+    background: #1a1a1a;  /* Dark background */
+    font-family: Arial, sans-serif;  /* Font settings */
+}
+
+/* Upload Container Styles */
+#upload-container {
+    position: fixed;  /* Fixed positioning */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.8);  /* Semi-transparent black background */
+    z-index: 1000;  /* Ensure it's on top */
+    transition: opacity 0.35s ease;  /* Opacity transition animation */
+}
+
+/* Upload Container Hidden State */
+#upload-container.hidden {
+    opacity: 0;
+    pointer-events: none;  /* Disable mouse events */
+}
+
+/* Drop Zone Styles */
+.drop-zone {
+    width: 80%;
+    max-width: 500px;
+    height: 300px;
+    border: 3px dashed #666;  /* Dashed border */
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+/* Drop Zone Content Container */
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;  /* Increase spacing between icon and text */
+    transform: translateY(-20px);  /* Move up slightly */
+}
+
+/* Icon Styles */
+.drop-zone-icon {
+    width: 120px;  /* Increase icon size */
+    height: 120px;
+    object-fit: contain;
+    margin-bottom: 0;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));  /* Add shadow effect */
+}
+
+/* Drop Zone Hover and Drag Over States */
+.drop-zone:hover,
+.drop-zone.drag-over {
+    border-color: #3a40f6;  /* Green border */
+    background: rgba(44, 56, 229, 0.2);  /* Light green background */
+    transform: scale(1.06);  /* Light zoom effect */
+}
+
+/* Drop Zone Text Styles */
+.drop-zone-text {
+    color: #fff;
+    font-size: 1.6em;
+    text-align: center;
+    pointer-events: none;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);  /* Add text shadow */
+}
+
+/* Drop Zone Subtext Styles */
+.drop-zone-text span {
+    font-size: 0.8em;
+    color: #888;
+    display: block;
+    margin-top: 10px;
+}
+
+/* File Input Styles */
+.file-input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;  /* Hide actual file input */
+    cursor: pointer;
+    z-index: 1001;
+}
+
+/* Canvas Styles */
+canvas {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    outline: none !important;
+    border: none !important;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: none !important;
+    background: #1a1a1a !important;
+}
+
+/* Widget Value Styles */
+.widget-value {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    width: 160px !important;
+    display: block !important;
+    background-color: #333 !important;
+    border: 1px solid #666 !important;
+    color: #fff !important;
+    padding: 2px 5px !important;
+    border-radius: 2px !important;
+}
+
+/* Widget Value Hover and Focus States */
+.widget-value:hover {
+    background-color: #444 !important;
+}
+
+.widget-value:focus {
+    background-color: #555 !important;
+    outline: none !important;
+    border-color: #888 !important;
+}
+
+/* Filename Display Styles */
+.filename-display {
+    position: fixed;
+    top: var(--filename-top);
+    left: var(--filename-left);
+    background-color: var(--filename-bg-color);
+    color: var(--filename-text-color);
+    padding: var(--filename-padding);
+    border-radius: var(--filename-border-radius);
+    font-size: var(--filename-font-size);
+    font-weight: var(--filename-font-weight);
+    z-index: 1000;
+    display: none;
+}
+
+/* LiteGraph Style Overrides */
+.litegraph {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Note Node Styles */
+.litegraph .node.Note {
+    background-color: #2A273F !important;
+    border: 1px solid #2A273F !important;
+    border-radius: 8px !important;
+}
+
+/* Note Node Widget Styles */
+.litegraph .node.Note .widget {
+    background: none !important;
+    border: none !important;
+    color: #fff !important;
+}
+
+/* Note Node Text Area Styles */
+.litegraph .node.Note .widget textarea {
+    background: none !important;
+    border: none !important;
+    color: #fff !important;
+    font-family: monospace !important;
+    resize: none !important;
+    padding: 10px !important;
+}
+
+/* Note Node Title Styles */
+.litegraph .node.Note .title {
+    color: #999 !important;
+    background-color: transparent !important;
+    border-bottom: 1px solid #666 !important;
+    padding: 8px !important;
+}
+
+/* Note Text Box Styles */
+.note-text-box {
+    background-color: #2A273F !important;
+    border: 1px solid #666 !important;
+    border-radius: 4px !important;
+    padding: 10px !important;
+    margin: 5px !important;
+    color: #fff !important;
+    font-family: monospace !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    overflow-y: auto !important;
+    white-space: pre-wrap !important;
+}
+
+/* Hide Note Node Title and Decorations */
+.litegraph .node.Note .title,
+.litegraph .node.Note .widget .name {
+    display: none !important;
+}
+
+/* Note Widget Container Styles */
+.litegraph .node.Note .widget {
+    margin: 0 !important;
+    background: none !important;
+    border: none !important;
+    width: 100% !important;
+}
+
+/* Main Container Layout */
+.container {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: var(--sidebar-width);
+    height: var(--sidebar-height);
+    background-color: #16161686;
+    border-radius: var(--sidebar-border-radius);
+    display: flex;
+    flex-direction: column;
+    z-index: 1001;
+    position: absolute;
+    bottom: var(--sidebar-bottom);
+    left: var(--sidebar-left);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 0px solid #333;
+    transition: transform 0.3s ease;
+}
+
+/* Sidebar Header Styles */
+.sidebar-header {
+    padding: 10px 20px;
+    font-size: 22px;
+    font-weight: bold;
+    border-bottom: 0px solid #333;
+    color: #c1c1c1;
+    border-radius: 12px 12px 0 0;
+}
+
+/* File List Styles */
+.file-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    margin: 5px;
+}
+
+/* File List Scrollbar Styles */
+.file-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.file-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.file-list::-webkit-scrollbar-thumb {
+    background: #6b4cf4;
+    border-radius: 3px;
+}
+
+/* File List Item Styles */
+.file-list-item {
+    padding: 8px 12px;
+    height: 36px;
+    box-sizing: border-box;
+    cursor: pointer;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    color: #c1c1c1;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+/* Filename Container Styles */
+.file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: absolute;
+    left: 12px;
+    right: 36px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+}
+
+/* File List Item Hover Effect */
+.file-list-item:hover {
+    background-color: #2d2d2d;
+    transform: translateX(2px);
+}
+
+/* File List Item Active State */
+.file-list-item.active {
+    background-color: #4f54fb;
+    border-left: 0px solid #2f35ea;
+}
+
+/* Main Content Area Styles */
+.main-content {
+    flex: 1;
+    position: relative;
+    margin-left: 320px;  /* Sidebar width + spacing */
+}
+
+/* Delete Button Styles */
+.delete-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background-color: #ea2f86;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: all 0.2s ease;
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+}
+
+/* Show Delete Button on File List Item Hover */
+.file-list-item:hover .delete-btn {
+    opacity: 1;
+}
+
+/* Delete Button Hover Effect */
+.delete-btn:hover {
+    background-color: #ea2f86;
+    color: #fff;
+}
+
+/* Collapse Button Styles */
+.sidebar-collapse-btn {
+    position: absolute;
+    right: -50px;
+    top: 0px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #59595993;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+/* Sidebar Collapsed State */
+.sidebar.collapsed {
+    transform: translateX(calc(-100% - 20px));
+}
+
+/* Collapse Button Collapsed State */
+.sidebar.collapsed .sidebar-collapse-btn {
+    transform: rotate(180deg);
+} 

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ComfyNode Preview</title>
+    <link rel="icon" type="image/png" href="./assets/comfynode_icon.png">
+    <script src="lib/litegraph.js"></script>
+    <link rel="stylesheet" href="lib/litegraph.css">
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <div class="container">
+      <!-- Left File List -->
+      <div class="sidebar">
+        <button class="sidebar-collapse-btn"><</button>
+        <div class="sidebar-header">History File</div>
+        <div id="file-list" class="file-list"></div>
+      </div>
+
+      <!-- Right Content Area -->
+      <div class="main-content">
+        <div id="filename-display" class="filename-display"></div>
+        <div id="upload-container">
+          <div class="drop-zone">
+            <div class="drop-zone-content">
+              <img src="./assets/comfynode_icon.png" class="drop-zone-icon" alt="ComfyNode">
+              <div class="drop-zone-text">
+                Drag the ComfyUI workflow file here<br>
+                <span>Or click to select a file</span>
+              </div>
+            </div>
+            <input type="file" id="file-input" accept=".json" class="file-input">
+          </div>
+        </div>
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+    <script src="js/main.js"></script>
+  </body>
+</html> 
