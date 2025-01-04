@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ComfyNode Preview</title>
     <link rel="icon" type="image/png" href="./assets/comfynode_icon.png">
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
     <script src="lib/litegraph.js"></script>
     <link rel="stylesheet" href="lib/litegraph.css">
     <link rel="stylesheet" href="css/style.css">
@@ -38,11 +39,11 @@
             <div class="drop-zone-content">
               <img src="./assets/comfynode_icon.png" class="drop-zone-icon" alt="ComfyNode">
               <div class="drop-zone-text">
-                Drag the ComfyUI workflow file here<br>
+                Drag the ComfyUI workflow / PNG here<br>
                 <span>Or click to select a file</span>
               </div>
             </div>
-            <input type="file" id="file-input" accept=".json" class="file-input">
+            <input type="file" id="file-input" accept=".json,.png" class="file-input">
           </div>
         </div>
         <canvas id="canvas"></canvas>
