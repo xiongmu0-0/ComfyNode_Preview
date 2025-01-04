@@ -258,7 +258,7 @@ canvas {
 .sidebar {
     width: var(--sidebar-width);
     height: var(--sidebar-height);
-    background-color: #16161686;
+    background-color: #0b0b0bdd;
     border-radius: var(--sidebar-border-radius);
     display: flex;
     flex-direction: column;
@@ -299,7 +299,7 @@ canvas {
 }
 
 .file-list::-webkit-scrollbar-thumb {
-    background: #6b4cf4;
+    background: #2f35ea2a;
     border-radius: 3px;
 }
 
