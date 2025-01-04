@@ -810,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         title: groupData.title || "Group",
                         bounding: groupData.bounding,
                         color: groupData.color || "#A88",
-                        font_size: 24,
+                        font_size: groupData.font_size || "24",
                         show_title: true
                     });
                     graph.add(group);
