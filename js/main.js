@@ -184,6 +184,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set canvas size
         resizeCanvas();
+        
+        // 添加渲染优化设置
+        graphCanvas.high_quality = true;           // 启用高质量渲染
+        graphCanvas.render_shadows = true;         // 启用阴影渲染
+        graphCanvas.default_text_font = "Arial";   // 使用清晰的字体
+        graphCanvas.node_text_size = 14;           // 设置更大的文字大小
+        
+        // 修改默认缩放比例
+        graphCanvas.ds.scale = 1.5;
     }
 
     // Adjust canvas size
@@ -237,6 +246,21 @@ document.addEventListener('DOMContentLoaded', function() {
             this.properties = nodeConfig.properties || {};
             this.title = nodeConfig.type || "ComfyNode";
             this.id = nodeConfig.id;
+            
+            // 增加节点的默认大小
+            this.size = [
+                parseInt(nodeConfig.size?.[0] || 280),  // 增加默认宽度
+                parseInt(nodeConfig.size?.[1] || 120)   // 增加默认高度
+            ];
+            
+            // 设置更大的字体大小和更清晰的样式
+            this.title_text_font = "14px Arial";  // 增加标题字体大小
+            this.font_size = 14;                  // 增加普通文本字体大小
+            this.title_text_shadow = true;        // 添加文字阴影提高清晰度
+
+            // 其他节点样式设置
+            this.bgcolor = "#101013FF";
+            this.shape = LiteGraph.ROUND_SHAPE;
             
             // Special handling for Note nodes
             if (nodeConfig.type === "Note") {
@@ -491,10 +515,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                 this.addWidget("text", "", value, (v) => {
                                     this.properties[`param_${index}`] = v;
                                 }, {
-                                    width: 180,
+                                    width: 200,           // 增加宽度
+                                    height: 30,           // 增加高度
                                     multiline: isMultiline,
                                     disabled: true,
-                                    fontSize: 12
+                                    fontSize: 13,         // 设置更大的字体
+                                    fontFamily: 'Arial',  // 使用更清晰的字体
+                                    textShadow: '1px 1px 2px rgba(0,0,0,0.5)', // 添加文字阴影
                                 });
                             }
                         });
@@ -663,76 +690,183 @@ document.addEventListener('DOMContentLoaded', function() {
         const file = files[0];
         console.log('Processing file:', file.name);
 
-        if (!file.name.toLowerCase().endsWith('.json')) {
-            alert('Please select a JSON file');
-            return;
+        // 检查文件类型
+        const fileExtension = file.name.toLowerCase().split('.').pop();
+        
+        if (fileExtension === 'json') {
+            handleJsonFile(file);
+        } else if (fileExtension === 'png') {
+            handlePngFile(file);
+        } else {
+            alert('Please select a JSON or PNG file');
         }
+    }
 
+    // 处理 JSON 文件
+    function handleJsonFile(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const content = e.target.result;
-                const workflow = JSON.parse(content);
-                
-                // Add to history
-                fileHistory.addFile(file.name, content);
-                
-                // Render workflow
-                renderWorkflow(workflow);
-                
-                // Hide upload container but keep it visible
-                uploadContainer.style.opacity = '0';
-                uploadContainer.style.pointerEvents = 'none';
-                
-                // Display filename
-                const filenameDisplay = document.getElementById('filename-display');
-                filenameDisplay.textContent = file.name;
-                filenameDisplay.style.display = 'block';
+                processWorkflowContent(file.name, content);
+            } catch (error) {
+                console.error('Error processing JSON:', error);
+                alert('Error processing JSON file: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+    }
 
-                // Update file list item active state
-                document.querySelectorAll('.file-list-item').forEach(el => {
-                    if (el.querySelector('.file-name').textContent === file.name) {
-                        el.classList.add('active');
-                    } else {
-                        el.classList.remove('active');
-                    }
-                });
-
-                // Add drag and drop event listeners for new files
-                document.addEventListener('dragenter', function(e) {
-                    e.preventDefault();
-                    // Show upload container
-                    uploadContainer.style.opacity = '1';
-                    uploadContainer.style.pointerEvents = 'auto';
-                });
+    // 处理 PNG 文件
+    function handlePngFile(file) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const buffer = e.target.result;
+                const bytes = new Uint8Array(buffer);
                 
-                // Hide upload container when drag leaves
-                uploadContainer.addEventListener('dragleave', function(e) {
-                    if (e.relatedTarget === null || !uploadContainer.contains(e.relatedTarget)) {
-                        uploadContainer.style.opacity = '0';
-                        uploadContainer.style.pointerEvents = 'none';
+                // 查找 PNG 签名
+                if (bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4E || bytes[3] !== 0x47) {
+                    throw new Error('Not a valid PNG file');
+                }
+
+                let offset = 8; // 跳过 PNG 签名
+                let workflow = null;
+
+                // 读取 PNG chunks
+                while (offset < bytes.length) {
+                    const length = bytes[offset] << 24 | bytes[offset + 1] << 16 | 
+                                 bytes[offset + 2] << 8 | bytes[offset + 3];
+                    offset += 4;
+
+                    // 获取 chunk 类型
+                    const chunkType = String.fromCharCode(
+                        bytes[offset], bytes[offset + 1], 
+                        bytes[offset + 2], bytes[offset + 3]
+                    );
+                    offset += 4;
+
+                    // 查找 tEXt chunk
+                    if (chunkType === 'tEXt') {
+                        let keyEnd = offset;
+                        
+                        // 查找 null 分隔符
+                        while (bytes[keyEnd] !== 0 && keyEnd < offset + length) {
+                            keyEnd++;
+                        }
+                        
+                        // 获取键名
+                        const key = String.fromCharCode(...bytes.slice(offset, keyEnd));
+                        
+                        // 获取值
+                        const valueStart = keyEnd + 1;
+                        const valueEnd = offset + length;
+                        const value = new TextDecoder().decode(
+                            bytes.slice(valueStart, valueEnd)
+                        );
+
+                        // 检查是否是工作流数据
+                        if (key === 'workflow' || key === 'parameters') {
+                            try {
+                                workflow = JSON.parse(value);
+                                if (workflow.prompt) {
+                                    workflow = workflow.prompt;
+                                }
+                            } catch (e) {
+                                console.log('Failed to parse chunk data:', e);
+                            }
+                        }
                     }
-                });
+
+                    // 移动到下一个 chunk
+                    offset += length + 4; // +4 for CRC
+                }
+
+                // 如果在 chunks 中没找到工作流，尝试在文件内容中查找
+                if (!workflow) {
+                    const text = new TextDecoder().decode(buffer);
+                    const matches = text.match(/\{"prompt":\s*{.+?}(?=\s*$)/s);
+                    if (matches) {
+                        try {
+                            workflow = JSON.parse(matches[0]);
+                        } catch (e) {
+                            console.log('Failed to parse text content:', e);
+                        }
+                    }
+                }
+
+                if (workflow) {
+                    // 直接使用文件名
+                    processWorkflowContent(file.name, JSON.stringify(workflow));
+                } else {
+                    throw new Error('No workflow data found in the image');
+                }
 
             } catch (error) {
-                console.error('Error processing file:', error);
-                alert('Failed to parse file: ' + error.message);
+                console.error('Error processing PNG:', error);
+                alert('Error extracting workflow from PNG: ' + error.message + 
+                      '\nPlease make sure this is a ComfyUI generated image with workflow data.');
             }
         };
 
-        reader.onerror = function(error) {
-            console.error('File reading error:', error);
-            alert('Error reading file');
-        };
+        reader.readAsArrayBuffer(file);
+    }
 
-        reader.readAsText(file);
+    // 处理工作流内容
+    function processWorkflowContent(filename, content) {
+        try {
+            const workflow = JSON.parse(content);
+            
+            // 添加到历史记录时使用工作流名称
+            fileHistory.addFile(filename, content);
+            
+            // 渲染工作流
+            renderWorkflow(workflow);
+            
+            // 隐藏上传容器，但保持拖放功能
+            uploadContainer.style.opacity = '0';
+            uploadContainer.style.pointerEvents = 'none';
+
+            // 添加拖放事件监听器
+            document.addEventListener('dragenter', function(e) {
+                e.preventDefault();
+                // 显示上传容器
+                uploadContainer.style.opacity = '1';
+                uploadContainer.style.pointerEvents = 'auto';
+            });
+
+            // 当拖离上传容器时隐藏它
+            uploadContainer.addEventListener('dragleave', function(e) {
+                if (e.relatedTarget === null || !uploadContainer.contains(e.relatedTarget)) {
+                    uploadContainer.style.opacity = '0';
+                    uploadContainer.style.pointerEvents = 'none';
+                }
+            });
+            
+            // 显示工作流名称
+            const filenameDisplay = document.getElementById('filename-display');
+            filenameDisplay.textContent = filename;
+            filenameDisplay.style.display = 'block';
+
+            // 更新文件列表项的激活状态
+            document.querySelectorAll('.file-list-item').forEach(el => {
+                if (el.querySelector('.file-name').textContent === filename) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+        } catch (error) {
+            console.error('Error processing workflow:', error);
+            alert('Error processing workflow: ' + error.message);
+        }
     }
 
     // Fit view to content
     function fitToContent() {
         if (!graph || !graphCanvas) return;
 
-        // Find boundaries of all nodes
+        // 找到所有节点的边界
         let minX = Infinity;
         let maxX = -Infinity;
         let minY = Infinity;
@@ -754,27 +888,23 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Add margin
+        // 添加边距
         const margin = 50;
         minX -= margin;
         maxX += margin;
         minY -= margin;
         maxY += margin;
 
-        // Calculate scale
+        // 计算缩放比例
         const width = maxX - minX;
         const height = maxY - minY;
         const scaleX = canvas.width / width;
         const scaleY = canvas.height / height;
-        const scale = Math.min(scaleX, scaleY, 1); // Limit max scale to 1
+        const scale = Math.min(scaleX, scaleY, 1.5); // 增加最大缩放限制到 3
 
-        // Calculate center position
-        const centerX = (minX + maxX) / 2;
-        const centerY = (minY + maxY) / 2;
-
-        // Set canvas transform
-        graphCanvas.ds.offset[0] = canvas.width / 2 - centerX * scale;
-        graphCanvas.ds.offset[1] = canvas.height / 2 - centerY * scale;
+        // 设置画布变换
+        graphCanvas.ds.offset[0] = canvas.width / 2 - (minX + maxX) / 2 * scale;
+        graphCanvas.ds.offset[1] = canvas.height / 2 - (minY + maxY) / 2 * scale;
         graphCanvas.ds.scale = scale;
     }
 
@@ -871,8 +1001,19 @@ document.addEventListener('DOMContentLoaded', function() {
             graphCanvas.render_connection_arrows = false;
             graphCanvas.render_connections_border = false;
 
+            // 设置更大的缩放比例
+            graphCanvas.ds.scale = 1.5;  // 增加缩放比例
+
             // Start rendering
             graph.start();
+            
+            // 调整 fitToContent 中的缩放
+            const oldFit = fitToContent;
+            fitToContent = function() {
+                oldFit();
+                graphCanvas.ds.scale = Math.max(graphCanvas.ds.scale, 0.8); // 确保最小缩放比例
+            };
+            
             fitToContent();
 
         } catch (error) {
