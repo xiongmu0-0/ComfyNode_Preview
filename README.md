@@ -7,6 +7,7 @@
 # ComfyNode Preview
 
 ComfyNode Preview 是一个基于网页的 ComfyUI 工作流查看器,让用户能够以交互式图形界面可视化并探索工作流配置。
+[https://xiongmu0-0.github.io/ComfyNode_Preview/](https://xiongmu0-0.github.io/ComfyNode_Preview/)
 
 ## 主要功能
 
