@@ -1,58 +1,72 @@
-[中文说明](https://github.com/xiongmu0-0/ComfyNode_Preview/blob/main/READMECN.md)
-
 # ComfyNode Preview
 
-ComfyNode Preview is a web-based viewer for ComfyUI workflows that allows users to visualize and explore workflow configurations in an interactive graph interface.
+ComfyNode Preview 是一个基于网页的 ComfyUI 工作流查看器,让用户能够以交互式图形界面可视化并探索工作流配置。
 
-## Features
+## 主要功能
 
-- **Drag & Drop Support**: Easily load workflow files by dragging and dropping JSON files onto the interface
-- **File History**: Keep track of recently opened workflows with a collapsible sidebar
-- **Interactive Graph View**: 
-  - View nodes and their connections in a clear, visual format
-  - Pan and zoom functionality to explore large workflows
-  - Auto-fit view to show all nodes
-  - Color-coded connections based on data types
-- **Responsive Design**: Automatically adjusts to window size changes
-- **Dark Theme**: Eye-friendly dark interface optimized for long viewing sessions
+- **拖放支持**: 
+  - 只需将 JSON 文件拖放到界面即可轻松加载工作流
+  - 也可以点击选择文件上传
 
-## Usage
+- **文件历史记录**: 
+  - 带有可折叠侧边栏的最近打开文件历史
+  - 方便快速访问之前查看过的工作流
 
-1. **Loading Workflows**:
-   - Drag and drop a ComfyUI workflow JSON file onto the interface
-   - Click to select a file from your system
-   - Click on a file from the history sidebar
+- **交互式图形视图**: 
+  - 以清晰的可视化格式查看节点及其连接
+  - 支持平移和缩放功能,便于浏览大型工作流
+  - 自动适配视图以显示所有节点
+  - 基于数据类型的彩色连接线
 
-2. **Navigation**:
-   - Pan: Click and drag on empty space
-   - Select nodes: Click on nodes
+- **响应式设计**: 
+  - 自动适应窗口大小变化
+  - 优化的暗色主题界面,适合长时间查看
 
-3. **History Management**:
-   - Recently opened files appear in the sidebar
-   - Click on a file name to reload it
-   - Use the delete button (×) to remove items from history
-   - Collapse/expand the sidebar using the arrow button
+## 使用方法
 
-## Technical Details
+1. **加载工作流**:
+   - 将 ComfyUI 工作流 JSON 文件拖放到界面上
+   - 点击选择系统中的文件
+   - 从历史记录侧边栏点击文件名
 
-- Built with vanilla JavaScript
-- Uses LiteGraph.js for graph visualization
-- Local storage for file history persistence
-- Supports all ComfyUI node types and connection types
-- Color-coded connections for different data types
+2. **界面操作**:
+   - 平移: 在空白处点击并拖动
+   - 选择节点: 点击节点
 
-## Browser Support
+3. **历史记录管理**:
+   - 最近打开的文件会显示在侧边栏中
+   - 点击文件名可重新加载该文件
+   - 使用删除按钮(×)从历史记录中移除项目
+   - 使用箭头按钮折叠/展开侧边栏
 
-Works in modern browsers that support:
+## 技术细节
+
+- 使用原生 JavaScript 构建
+- 使用 LiteGraph.js 实现图形可视化
+- 使用本地存储持久化文件历史
+- 支持所有 ComfyUI 节点类型和连接类型
+- 不同数据类型使用不同颜色的连接线
+
+## 浏览器支持
+
+支持具有以下特性的现代浏览器:
 - ES6+ JavaScript
-- HTML5 File API
+- HTML5 文件 API
 - Local Storage
 - Canvas API
 
-## Getting Started
+## 快速开始
 
-1. Clone the repository
-2. Open `index.html` in a web browser
-3. Drag and drop a ComfyUI workflow JSON file to start viewing
+1. 克隆仓库
+2. 在网页浏览器中打开 `index.html`
+3. 拖放一个 ComfyUI 工作流 JSON 文件即可开始查看
 
-No build process or server required - runs entirely in the browser!
+无需构建过程或服务器 - 完全在浏览器中运行！
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request 来帮助改进这个项目！
+
+## 许可证
+
+本项目采用 MIT 许可证
