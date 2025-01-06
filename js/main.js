@@ -213,12 +213,12 @@ document.addEventListener('DOMContentLoaded', function() {
         "CONDITIONING": "#ffa931",
         "LATENT": "#ff9cf9",
         "CONTROL_NET": "#00d78d",
-        "STRING": "#80CE4CFF",
+        "STRING": "#80CE4C",
         "INT": "#29699c",
         "FLOAT": "#9955ff",
         "BOOLEAN": "#ff5599",
         "TUPLE": "#55ff99",
-        "LIST": "#4BCA6FFF",
+        "LIST": "#4BCA6F",
         "MASK": "#5599ff",
         "*": "#99aa99"  // Default color
     };
@@ -232,11 +232,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             this.properties = {};
             this.size = [200, 100];
-            this.bgcolor = "#101013FF";
+            this.shape = LiteGraph.ROUND_SHAPE;
             
             this.inputs = [];
             this.outputs = [];
             this.title_mode = LiteGraph.NORMAL_TITLE;
+            
+            // 添加固定的 computeSize 方法
+            this.computeSize = function() {
+                return this.size;  // 直接返回当前设置的 size
+            }
         }
 
         configure(nodeConfig) {
@@ -247,21 +252,24 @@ document.addEventListener('DOMContentLoaded', function() {
             this.title = nodeConfig.type || "ComfyNode";
             this.id = nodeConfig.id;
             
+            // 节点样式设置
+            this.bgcolor = nodeConfig.bgcolor || "#2B2D36FF";
+            this.color = nodeConfig.color || "#323841FF";
+            this.boxcolor = nodeConfig.boxcolor || "#6e7581";
+            
             // 增加节点的默认大小
-            this.size = [
-                parseInt(nodeConfig.size?.[0] || 280),  // 增加默认宽度
-                parseInt(nodeConfig.size?.[1] || 120)   // 增加默认高度
-            ];
+            const width = parseInt(nodeConfig.size?.['0'] || nodeConfig.size?.[0] || 280);
+            const height = parseInt(nodeConfig.size?.['1'] || nodeConfig.size?.[1] || 120);
+            this.size = [width, height];
+            
+            // 强制更新size
+            this.onResize?.(this.size);
             
             // 设置更大的字体大小和更清晰的样式
             this.title_text_font = "14px Arial";  // 增加标题字体大小
             this.font_size = 14;                  // 增加普通文本字体大小
             this.title_text_shadow = true;        // 添加文字阴影提高清晰度
 
-            // 其他节点样式设置
-            this.bgcolor = "#101013FF";
-            this.shape = LiteGraph.ROUND_SHAPE;
-            
             // Special handling for Note nodes
             if (nodeConfig.type === "Note") {
                 // Save Note text content
@@ -1004,6 +1012,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // 设置更大的缩放比例
             graphCanvas.ds.scale = 1.5;  // 增加缩放比例
 
+            // 设置连接线样式
+            graphCanvas.connections_width = 3;                   // 连接线宽度
+            graphCanvas.default_connection_color = "#888888";    // 默认连接线颜色
+            graphCanvas.default_connection_color_byType = true;  // 根据类型使用不同颜色
+            
             // Start rendering
             graph.start();
             
