@@ -253,9 +253,9 @@ document.addEventListener('DOMContentLoaded', function() {
             this.id = nodeConfig.id;
             
             // 节点样式设置
-            this.bgcolor = nodeConfig.bgcolor || "#2B2D36FF";
-            this.color = nodeConfig.color || "#323841FF";
-            this.boxcolor = nodeConfig.boxcolor || "#6e7581";
+            this.bgcolor = nodeConfig.bgcolor || "#16181CFF";
+            this.color = nodeConfig.color || "#232330FF";
+            this.boxcolor = nodeConfig.boxcolor || "#606375FF";
             
             // 增加节点的默认大小
             const width = parseInt(nodeConfig.size?.['0'] || nodeConfig.size?.[0] || 280);
@@ -951,6 +951,73 @@ document.addEventListener('DOMContentLoaded', function() {
                         font_size: groupData.font_size || "24",
                         show_title: true
                     });
+
+                    // Override isPointInside to only return true for title area
+                    const originalIsPointInside = group.isPointInside.bind(group);
+                    group.isPointInside = function(x, y, graphcanvas, margin) {
+                        const titleHeight = 30;
+                        
+                        // Get the actual position relative to the group
+                        const localX = x - this.pos[0];
+                        const localY = y - this.pos[1];
+
+                        // Check if point is in title area
+                        if (localY >= 0 && localY <= titleHeight) {
+                            return originalIsPointInside.call(this, x, y, graphcanvas, margin);
+                        }
+                        
+                        return false;
+                    };
+
+                    // Override the drawing method to add a distinct title bar
+                    group.onDrawForeground = function(ctx) {
+                        const titleHeight = 30;
+                        
+                        // Save context state
+                        ctx.save();
+                        
+                        // Draw group background with slight transparency
+                        ctx.fillStyle = "rgba(34, 34, 34, 0.3)";
+                        ctx.beginPath();
+                        ctx.rect(0, 0, this.size[0], this.size[1]);
+                        ctx.fill();
+                        
+                        // Draw title background with darker color
+                        ctx.fillStyle = "rgba(68, 68, 68, 0.8)";  // 更深的颜色，更不透明
+                        ctx.beginPath();
+                        ctx.rect(0, 0, this.size[0], titleHeight);
+                        ctx.fill();
+                        
+                        // Draw title text with shadow for better visibility
+                        if(this.title != null) {
+                            ctx.font = "bold 14px Arial";  // 加粗字体
+                            ctx.shadowColor = "rgba(0,0,0,0.5)";
+                            ctx.shadowBlur = 2;
+                            ctx.fillStyle = "#FFFFFF";
+                            ctx.textAlign = "left";
+                            ctx.fillText(this.title, 10, titleHeight * 0.7);
+                        }
+                        
+                        // Draw borders
+                        ctx.shadowColor = "transparent";  // 清除阴影
+                        ctx.strokeStyle = this.color || "#AAA";
+                        ctx.lineWidth = 2;  // 更粗的边框
+                        
+                        // Draw title separator line
+                        ctx.beginPath();
+                        ctx.moveTo(0, titleHeight);
+                        ctx.lineTo(this.size[0], titleHeight);
+                        ctx.stroke();
+                        
+                        // Draw group border
+                        ctx.beginPath();
+                        ctx.rect(0, 0, this.size[0], this.size[1]);
+                        ctx.stroke();
+                        
+                        // Restore context state
+                        ctx.restore();
+                    };
+
                     graph.add(group);
                 });
             }
