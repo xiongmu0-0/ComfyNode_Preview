@@ -39,6 +39,7 @@ ComfyNode Preview 是一个基于网页的 ComfyUI 工作流查看器,让用户�
 
 - 更新支持拖入Comfyui生成的带有数据信息的PNG图片，读取PNG图片中的workflow
 
+---
 
 ## 使用方法
 
