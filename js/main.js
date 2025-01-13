@@ -1,4 +1,73 @@
-document.addEventListener('DOMContentLoaded', function() {
+let nodeInfoMap = new Map();
+let nodeInfoReady = false;
+
+async function fetchNodeInfo() {
+    try {
+        // 获取网站内容
+        const response = await fetch('https://ltdrdata.github.io/');
+        const html = await response.text();
+        
+        // 解析 HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // 获取表格中的所有行
+        const rows = doc.querySelectorAll('table tr');
+        console.log('Found rows:', rows.length);
+        
+        // 遍历每一行
+        rows.forEach((row, index) => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 5) {
+                // 获取 Title 列（第3列）和 NODES 列（第5列）
+                const titleCell = cells[2];
+                const nodesCell = cells[4];
+                
+                // 获取插件名称（Title 列）
+                const pluginName = titleCell.textContent.trim();
+                
+                // 获取节点列表文本
+                const nodesText = nodesCell.textContent;
+                
+                // 将节点列表分割成单独的节点类型并清理空格
+                const nodeTypes = nodesText.split(/[\s,\n]+/)
+                    .map(t => t.trim())
+                    .filter(t => t);
+                
+                // 为每个节点类型保存对应的插件名称
+                nodeTypes.forEach(nodeType => {
+                    if (nodeType) {
+                        nodeInfoMap.set(nodeType, pluginName);
+                        console.log(`Mapped: ${nodeType} -> ${pluginName}`);
+                    }
+                });
+            }
+        });
+        
+        // 标记数据已准备好
+        nodeInfoReady = true;
+        console.log('Node info mapping completed. Map size:', nodeInfoMap.size);
+        
+        // 重新配置所有现有节点
+        if (window.graph) {
+            window.graph._nodes.forEach(node => {
+                if (node.configure) {
+                    node.configure({
+                        type: node.title,
+                        id: node.id
+                    });
+                }
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error fetching node info:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await fetchNodeInfo();
+    
     const canvas = document.getElementById('canvas');
     const uploadContainer = document.getElementById('upload-container');
     const fileInput = document.getElementById('file-input');
@@ -251,6 +320,21 @@ document.addEventListener('DOMContentLoaded', function() {
             this.properties = nodeConfig.properties || {};
             this.title = nodeConfig.type || "ComfyNode";
             this.id = nodeConfig.id;
+            
+            // 获取节点类型的标题
+            const nodeType = nodeConfig.type || "";
+            
+            // 只有当节点信息准备好后才设置标签
+            if (nodeType && nodeInfoReady) {
+                const pluginName = nodeInfoMap.get(nodeType);
+                console.log(`Node ${this.id} (${nodeType}) -> Plugin: ${pluginName}`);
+                
+                // 设置标签内容
+                this.tag = "#" + this.id + (pluginName ? " " + pluginName : "");
+                console.log('Set tag to:', this.tag);
+            } else {
+                this.tag = "#" + this.id;
+            }
             
             // 节点样式设置
             this.bgcolor = nodeConfig.bgcolor || "#16181CFF";
@@ -621,6 +705,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.widgets_values = state.widgets_values;
             }
         }
+
+        onDrawForeground(ctx) {
+            if(!this.tag) return;
+            
+            // 保存当前上下文状态
+            ctx.save();
+            
+            // 设置标签样式
+            const padding = 5;
+            const fontSize = 13;
+            ctx.font = fontSize + "px Arial";
+            const textWidth = ctx.measureText(this.tag).width;
+            const tagWidth = textWidth + (padding * 2);
+            const tagHeight = fontSize + (padding * 2);
+            
+            // 修改标签位置 - 节点外部右上角，与节点右对齐
+            const x = this.size[0] - tagWidth;  // 右对齐
+            const y = -tagHeight - 32;  // 再往上移动一些
+            
+            // 绘制标签背景
+            ctx.fillStyle = "#1a1a1a";
+            ctx.beginPath();
+            ctx.roundRect(x, y, tagWidth, tagHeight, [4]);
+            ctx.fill();
+            
+            // 绘制标签文本
+            ctx.fillStyle = "#E1E1E1FF";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(this.tag, x + tagWidth/2, y + tagHeight/2);
+            
+            // 恢复上下文状态
+            ctx.restore();
+        }
     }
 
     // Set prototype chain correctly - moved outside class definition
@@ -864,6 +982,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.classList.remove('active');
                 }
             });
+
         } catch (error) {
             console.error('Error processing workflow:', error);
             alert('Error processing workflow: ' + error.message);
@@ -1125,4 +1244,4 @@ document.addEventListener('DOMContentLoaded', function() {
     collapseBtn.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
     });
-}); 
+});
