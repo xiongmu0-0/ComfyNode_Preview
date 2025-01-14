@@ -5,7 +5,7 @@
     --filename-left: 20px;         /* Distance from left */
     --filename-padding: 8px 15px;  /* Padding */
     --filename-font-size: 24px;    /* Font size */
-    --filename-bg-color: rgba(50, 50, 50, 0.9);  /* Background color */
+    --filename-bg-color: rgba(42, 42, 42, 0.9);  /* Background color */
     --filename-text-color: #c1c1c1;              /* Text color */
     --filename-border-radius: 8px;               /* Border radius */
     --filename-font-weight: 600;                 /* Font weight */
@@ -136,7 +136,6 @@ canvas {
     border: none !important;
     -webkit-tap-highlight-color: transparent;
     box-shadow: none !important;
-    background: #1a1a1a !important;
 }
 
 /* Widget Value Styles */
