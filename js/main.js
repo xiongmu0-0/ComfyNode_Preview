@@ -1365,4 +1365,3 @@ const MIN_SCALE = 0.8;
 function setCanvasScale(graphCanvas, scale) {
     graphCanvas.ds.scale = Math.max(scale, MIN_SCALE);
 }
-
