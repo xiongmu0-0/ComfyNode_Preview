@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         graphCanvas = new LGraphCanvas(canvas, graph);
         
         // Configure canvas
-        graphCanvas.background_color = '#1a1a1a';
+        graphCanvas.background_color = '#1A1A1AFF';
         graphCanvas.clear_background = true;
         graphCanvas.render_grid = false;
         graphCanvas.render_background_grid = false;
@@ -390,9 +390,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 top: 20px;
                 left: 50%;
                 transform: translateX(-50%);
-                background: rgba(0, 0, 0, 0.8);
+                background: #374AF7FF;
                 color: white;
-                padding: 8px 16px;
+                padding: 16px 26px;
                 border-radius: 4px;
                 z-index: 10000;
                 font-family: Arial, sans-serif;
@@ -513,9 +513,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 top: 20px;
                                 left: 50%;
                                 transform: translateX(-50%);
-                                background: rgba(0, 0, 0, 0.8);
+                                background: #374AF7FF;
                                 color: white;
-                                padding: 8px 16px;
+                                padding: 16px 26px;
                                 border-radius: 4px;
                                 z-index: 10000;
                                 font-family: Arial, sans-serif;
