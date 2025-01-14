@@ -1,72 +1,62 @@
-let nodeInfoMap = new Map();
-let nodeInfoReady = false;
+// 添加防抖函数定义
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
 
-async function fetchNodeInfo() {
+let extensionNodeMap = null;
+
+async function loadExtensionNodeMap() {
     try {
-        // 获取网站内容
-        const response = await fetch('https://ltdrdata.github.io/');
-        const html = await response.text();
-        
-        // 解析 HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        
-        // 获取表格中的所有行
-        const rows = doc.querySelectorAll('table tr');
-        console.log('Found rows:', rows.length);
-        
-        // 遍历每一行
-        rows.forEach((row, index) => {
-            const cells = row.querySelectorAll('td');
-            if (cells.length >= 5) {
-                // 获取 Title 列（第3列）和 NODES 列（第5列）
-                const titleCell = cells[2];
-                const nodesCell = cells[4];
-                
-                // 获取插件名称（Title 列）
-                const pluginName = titleCell.textContent.trim();
-                
-                // 获取节点列表文本
-                const nodesText = nodesCell.textContent;
-                
-                // 将节点列表分割成单独的节点类型并清理空格
-                const nodeTypes = nodesText.split(/[\s,\n]+/)
-                    .map(t => t.trim())
-                    .filter(t => t);
-                
-                // 为每个节点类型保存对应的插件名称
-                nodeTypes.forEach(nodeType => {
-                    if (nodeType) {
-                        nodeInfoMap.set(nodeType, pluginName);
-                        console.log(`Mapped: ${nodeType} -> ${pluginName}`);
-                    }
-                });
-            }
-        });
-        
-        // 标记数据已准备好
-        nodeInfoReady = true;
-        console.log('Node info mapping completed. Map size:', nodeInfoMap.size);
-        
-        // 重新配置所有现有节点
-        if (window.graph) {
-            window.graph._nodes.forEach(node => {
-                if (node.configure) {
-                    node.configure({
-                        type: node.title,
-                        id: node.id
-                    });
-                }
-            });
+        const response = await fetch('https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/refs/heads/main/extension-node-map.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+        extensionNodeMap = await response.json();
+        console.log('Loaded extension node map:', extensionNodeMap);
     } catch (error) {
-        console.error('Error fetching node info:', error);
+        console.error('Error loading extension node map:', error);
     }
 }
 
+function findPluginNickname(nodeType) {
+    if (!extensionNodeMap || !nodeType) return null;
+    
+    // 遍历所有插件数据
+    for (const [url, data] of Object.entries(extensionNodeMap)) {
+        // 跳过特定的URL
+        if (url.toLowerCase().includes('comfyanonymous/comfyui') || 
+            url.toLowerCase().includes('seedsa/fooocus') ||
+            url.toLowerCase().includes('fooocus') ||
+            url.toLowerCase().includes('audioscavenger/comfyui-thumbnails')) {
+            continue;
+        }
+
+        const nodeTypes = data[0];
+        const metadata = data[1];
+        
+        // 完全匹配
+        const exactMatch = nodeTypes.find(type => type === nodeType);
+        
+        if (exactMatch) {
+            return {
+                nickname: metadata.nickname || metadata.title || metadata.title_aux || null,
+                url: url
+            };
+        }
+    }
+    return null;
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
-    await fetchNodeInfo();
+    try {
+        await loadExtensionNodeMap(); // 加载扩展节点映射数据
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    }
     
     const canvas = document.getElementById('canvas');
     const uploadContainer = document.getElementById('upload-container');
@@ -311,6 +301,114 @@ document.addEventListener('DOMContentLoaded', async function() {
             this.computeSize = function() {
                 return this.size;  // 直接返回当前设置的 size
             }
+
+            // 添加计算标签区域的辅助方法
+            this.getTagArea = function() {
+                if (!this.tag) return null;
+                
+                const padding = 5;
+                const fontSize = 13;
+                const textWidth = this.computeTextWidth(this.tag, fontSize + "px Arial");
+                const tagWidth = textWidth + (padding * 2);
+                const tagHeight = fontSize + (padding * 2);
+                
+                // 扩展点击区域到节点顶部
+                return {
+                    x: this.size[0] - tagWidth - 0,     // 左侧多 10px
+                    y: -tagHeight - 15,                  // 保持原始位置
+                    width: tagWidth + 6,                // 两侧各增加 10px
+                    height: tagHeight + 32,              // 延伸到节点顶部
+                    right: this.size[0] + 10             // 右侧多 10px
+                };
+            };
+
+            // 添加检查点是否在标签区域内的辅助方法
+            this.isPointInTagArea = function(local_pos) {
+                const area = this.getTagArea();
+                if (!area) return false;
+                
+                return local_pos[0] >= area.x && 
+                       local_pos[0] <= area.right && 
+                       local_pos[1] >= area.y && 
+                       local_pos[1] <= area.y + area.height;
+            };
+
+            // 添加鼠标事件处理
+            this.onMouseDown = function(e, local_pos) {
+                if (!this.tag) return false;
+                
+                if (this.isPointInTagArea(local_pos)) {
+                    // 如果有插件 URL，就复制 URL，否则复制插件名称
+                    const tagParts = this.tag.split(' ');
+                    const textToCopy = this.pluginUrl || (tagParts.length > 1 ? tagParts.slice(1).join(' ') : '');
+                    
+                    if (textToCopy) {
+                        navigator.clipboard.writeText(textToCopy).then(() => {
+                            // 显示提示
+                            this.showCopyNotification(this.pluginUrl ? '插件链接已复制到剪贴板' : '标签已复制到剪贴板');
+                        }).catch(err => {
+                            console.error('Failed to copy text:', err);
+                        });
+                    }
+                    
+                    return true; // 阻止事件冒泡
+                }
+                
+                return false; // 允许其他点击处理
+            };
+
+            // 添加鼠标悬停效果
+            this.onMouseOver = function(e, local_pos) {
+                if (!this.tag) return;
+                
+                if (this.isPointInTagArea(local_pos)) {
+                    document.body.style.cursor = 'pointer';
+                } else {
+                    document.body.style.cursor = 'default';
+                }
+            };
+            
+            this.onMouseOut = function() {
+                document.body.style.cursor = 'default';
+            };
+        }
+
+        // 辅助方法：计算文本宽度
+        computeTextWidth(text, font) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.font = font;
+            return ctx.measureText(text).width;
+        }
+
+        // 显示复制成功提示
+        showCopyNotification(message = '已复制到剪贴板') {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 4px;
+                z-index: 10000;
+                font-family: Arial, sans-serif;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // 2秒后移除提示
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 2000);
         }
 
         configure(nodeConfig) {
@@ -321,25 +419,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             this.title = nodeConfig.type || "ComfyNode";
             this.id = nodeConfig.id;
             
-            // 获取节点类型的标题
+            // 获取节点类型
             const nodeType = nodeConfig.type || "";
-            
-            // 只有当节点信息准备好后才设置标签
-            if (nodeType && nodeInfoReady) {
-                const pluginName = nodeInfoMap.get(nodeType);
-                console.log(`Node ${this.id} (${nodeType}) -> Plugin: ${pluginName}`);
+
+            // 获取插件信息并设置标签，但对 Reroute 节点特殊处理
+            if (nodeType === "Reroute") {
+                this.tag = null;  // 不显示标签
+                this.pluginUrl = null;
                 
-                // 设置标签内容
-                this.tag = "#" + this.id + (pluginName ? " " + pluginName : "");
-                console.log('Set tag to:', this.tag);
+                // 移除鼠标事件处理
+                this.onMouseDown = null;
+                this.onMouseOver = null;
+                this.onMouseOut = null;
             } else {
-                this.tag = "#" + this.id;
+                // 获取插件信息
+                const pluginInfo = findPluginNickname(nodeType);
+                this.pluginUrl = pluginInfo?.url || null;  // 保存 URL
+                this.tag = "#" + this.id + (pluginInfo?.nickname ? " " + pluginInfo.nickname : "");
             }
             
             // 节点样式设置
-            this.bgcolor = nodeConfig.bgcolor || "#16181CFF";
-            this.color = nodeConfig.color || "#232330FF";
-            this.boxcolor = nodeConfig.boxcolor || "#606375FF";
+            this.bgcolor = nodeConfig.bgcolor || "#131313FF";
+            this.color = nodeConfig.color || "#131313FF";
+            this.boxcolor = nodeConfig.boxcolor || "#7D7F8DFF";
             
             // 增加节点的默认大小
             const width = parseInt(nodeConfig.size?.['0'] || nodeConfig.size?.[0] || 280);
@@ -405,7 +507,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             document.execCommand('copy');
                             // Show notification
                             const notification = document.createElement('div');
-                            notification.textContent = 'Text copied to clipboard';
+                            notification.textContent = '文本已复制到剪贴板';
                             notification.style.cssText = `
                                 position: fixed;
                                 top: 20px;
@@ -462,9 +564,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (!this.noteText) return;
                     
                     // Set text box style
-                    ctx.fillStyle = "#43434394";
-                    ctx.strokeStyle = "#666";
-                    ctx.lineWidth = 1;
+                    ctx.fillStyle = "#00000021";
+                    ctx.strokeStyle = "#00000021";
+                    ctx.lineWidth = 0;
                     
                     // Draw text box background
                     const margin = 10;
@@ -709,10 +811,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         onDrawForeground(ctx) {
             if(!this.tag) return;
             
-            // 保存当前上下文状态
             ctx.save();
             
-            // 设置标签样式
             const padding = 5;
             const fontSize = 13;
             ctx.font = fontSize + "px Arial";
@@ -720,11 +820,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             const tagWidth = textWidth + (padding * 2);
             const tagHeight = fontSize + (padding * 2);
             
-            // 修改标签位置 - 节点外部右上角，与节点右对齐
-            const x = this.size[0] - tagWidth;  // 右对齐
-            const y = -tagHeight - 32;  // 再往上移动一些
+            const x = this.size[0] - tagWidth;
+            const y = -tagHeight - 32;
+            
+            // 先绘制节点内容（如果有的话）
+            if (this.onDrawForeground_super) {
+                this.onDrawForeground_super.call(this, ctx);
+            }
             
             // 绘制标签背景
+            ctx.globalCompositeOperation = 'source-over';  // 使用正常绘制模式
             ctx.fillStyle = "#1a1a1a";
             ctx.beginPath();
             ctx.roundRect(x, y, tagWidth, tagHeight, [4]);
@@ -736,7 +841,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             ctx.textBaseline = "middle";
             ctx.fillText(this.tag, x + tagWidth/2, y + tagHeight/2);
             
-            // 恢复上下文状态
             ctx.restore();
         }
     }
@@ -1036,7 +1140,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Make renderWorkflow available globally
-    window.renderWorkflow = function(workflow) {
+    window.renderWorkflow = function(workflowData) {
         try {
             if (!graph) {
                 initCanvas();
@@ -1051,8 +1155,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Create node mapping
             const nodeMap = new Map();
 
-            // Process nodes
-            workflow.nodes.forEach((nodeConfig) => {
+            // 直接处理节点
+            workflowData.nodes.forEach((nodeConfig) => {
                 const node = LiteGraph.createNode("comfy/base");
                 node.configure(nodeConfig);
                 nodeMap.set(nodeConfig.id, node);
@@ -1060,8 +1164,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
 
             // Process groups
-            if (workflow.groups && Array.isArray(workflow.groups)) {
-                workflow.groups.forEach(groupData => {
+            if (workflowData.groups && Array.isArray(workflowData.groups)) {
+                workflowData.groups.forEach(groupData => {
                     const group = new LiteGraph.LGraphGroup();
                     group.configure({
                         title: groupData.title || "Group",
@@ -1142,12 +1246,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // Set graph ID counters
-            graph.last_node_id = Math.max(workflow.last_node_id || 0, ...Array.from(nodeMap.keys()));
-            graph.last_link_id = workflow.last_link_id || 0;
+            graph.last_node_id = Math.max(workflowData.last_node_id || 0, ...Array.from(nodeMap.keys()));
+            graph.last_link_id = workflowData.last_link_id || 0;
 
             // Create connections
-            if (workflow.links) {
-                workflow.links.forEach((link) => {
+            if (workflowData.links) {
+                workflowData.links.forEach((link) => {
                     try {
                         const [linkId, originNodeId, originSlot, targetNodeId, targetSlot] = link;
                         
@@ -1188,21 +1292,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
 
-            // Configure canvas connection style
-            graphCanvas.connections_width = 3;
-            graphCanvas.connections_shadow = false;
-            graphCanvas.render_curved_connections = true;
-            graphCanvas.render_connection_arrows = false;
-            graphCanvas.render_connections_border = false;
+            // 统一配置连接线样式
+            configureConnectionStyle(graphCanvas);
 
-            // 设置更大的缩放比例
-            graphCanvas.ds.scale = 1.5;  // 增加缩放比例
+            // 设置画布缩放
+            setCanvasScale(graphCanvas, DEFAULT_SCALE);
 
-            // 设置连接线样式
-            graphCanvas.connections_width = 3;                   // 连接线宽度
-            graphCanvas.default_connection_color = "#888888";    // 默认连接线颜色
-            graphCanvas.default_connection_color_byType = true;  // 根据类型使用不同颜色
-            
             // Start rendering
             graph.start();
             
@@ -1221,22 +1316,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
 
-    // Listen for window resize
-    window.addEventListener('resize', resizeCanvas);
-
-    function handleFile(file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            // Display filename
-            const filenameDisplay = document.getElementById('filename-display');
-            filenameDisplay.textContent = file.name;
-            filenameDisplay.style.display = 'block';
-            
-            // Other existing file handling code...
-        };
-        reader.readAsText(file);
-    }
-
     // Sidebar collapse functionality
     const sidebar = document.querySelector('.sidebar');
     const collapseBtn = document.querySelector('.sidebar-collapse-btn');
@@ -1244,4 +1323,46 @@ document.addEventListener('DOMContentLoaded', async function() {
     collapseBtn.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
     });
+
+    function setupDragDropListeners(uploadContainer) {
+        document.addEventListener('dragenter', function(e) {
+            e.preventDefault();
+            uploadContainer.style.opacity = '1';
+            uploadContainer.style.pointerEvents = 'auto';
+        });
+
+        uploadContainer.addEventListener('dragleave', function(e) {
+            if (e.relatedTarget === null || !uploadContainer.contains(e.relatedTarget)) {
+                uploadContainer.style.opacity = '0';
+                uploadContainer.style.pointerEvents = 'none';
+            }
+        });
+    }
+
+    // 在需要的地方调用
+    setupDragDropListeners(uploadContainer);
+
+    // 添加 resize 事件监听器
+    window.addEventListener('resize', debounce(resizeCanvas, 250));
+
+    // 在初始化 LiteGraph 时
+    LiteGraph.DEFAULT_STYLES = false;
 });
+// 统一配置连接线样式
+function configureConnectionStyle(graphCanvas) {
+    graphCanvas.connections_width = 3;
+    graphCanvas.connections_shadow = false;
+    graphCanvas.render_curved_connections = true;
+    graphCanvas.render_connection_arrows = false;
+    graphCanvas.render_connections_border = false;
+    graphCanvas.default_connection_color = "#888888";
+    graphCanvas.default_connection_color_byType = true;
+}
+
+const DEFAULT_SCALE = 1.5;
+const MIN_SCALE = 0.8;
+
+function setCanvasScale(graphCanvas, scale) {
+    graphCanvas.ds.scale = Math.max(scale, MIN_SCALE);
+}
+
